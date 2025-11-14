@@ -46,7 +46,6 @@ const DecryptedText = ({
   const [isHovering, setIsHovering] = useState(false)
   const [isScrambling, setIsScrambling] = useState(false)
   const [revealedIndices, setRevealedIndices] = useState<Set<number>>(new Set())
-  const [hasAnimated, setHasAnimated] = useState(false)
   const containerRef = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
@@ -159,33 +158,31 @@ const DecryptedText = ({
   useEffect(() => {
     if (animateOn !== 'view' && animateOn !== 'both') return
 
-    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+    const currentRef = containerRef.current
+    if (!currentRef) return
+
+    const handleIntersection = (entries: IntersectionObserverEntry[]) => {
       entries.forEach((entry) => {
-        if (entry.isIntersecting && !hasAnimated) {
+        if (entry.isIntersecting) {
           setIsHovering(true)
-          setHasAnimated(true)
+        } else {
+          setIsHovering(false)
         }
       })
     }
 
-    const observerOptions: IntersectionObserverInit = {
+    const observer = new IntersectionObserver(handleIntersection, {
       root: null,
       rootMargin: '0px',
-      threshold: 0.2,
-    }
+      threshold: 0.35,
+    })
 
-    const observer = new IntersectionObserver(observerCallback, observerOptions)
-    const currentRef = containerRef.current
-    if (currentRef) {
-      observer.observe(currentRef)
-    }
+    observer.observe(currentRef)
 
     return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef)
-      }
+      observer.disconnect()
     }
-  }, [animateOn, hasAnimated])
+  }, [animateOn])
 
   const hoverProps: Partial<HTMLMotionProps<'span'>> =
     animateOn === 'hover' || animateOn === 'both'
